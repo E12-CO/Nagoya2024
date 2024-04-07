@@ -1,2 +1,2 @@
 # Nagoya 2024 Microrobot competition
-Su Su Kor Hai Phan Satu Satu.
+Electronics Design files, Example code and Documentations.
