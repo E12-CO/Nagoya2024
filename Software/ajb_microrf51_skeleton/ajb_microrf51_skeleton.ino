@@ -12,7 +12,10 @@
 // Board : AJB MicroRF51 (nRF51822-QFAA) Using Arduino-nRF5 board and BLEPeripheral library with Softdevice S130.
 #include <nrf.h>
 
+#include <SPI.h>
 #include <BLEPeripheral.h>
+#include "BLESerial.h"
+
 
 #include "io_pins.h"
 #include "nrf_pwm_noglitch.h"
@@ -41,12 +44,17 @@
 // the default direction of each left and right motor separately.
 // Name L/R_FORWARD/BACKWARD
 
+// Bluetooth Serial instant 
+BLESerial BLESerial(BLE_REQ, BLE_RDY, BLE_RST);
+
 void setup() {
   // put your setup code here, to run once:
+  BLESerial.setLocalName("AJB2024");// Set Bluetooth Name
+  BLESerial.begin();// Start nRF softdevice and Bluetooth stuffs
   initGPIO();// Initialize GPIO and PWM
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
-
+  BLESerial.poll();
 }
