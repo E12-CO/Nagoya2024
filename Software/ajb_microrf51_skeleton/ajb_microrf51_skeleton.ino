@@ -37,15 +37,15 @@
 //
 // motor_setSpeedLR(left_motor, right_motor);
 //
-// Since the PWM resolution is 12 bit,
-// the value range is -4095 to 0 to 4095.
+// Since the PWM resolution is 8 bit,
+// the value range is -255 to 0 to 255.
 // This function take in two int16_t variable as speed.
 // Also there are MACROs in io_pins.h that you can customize
 // the default direction of each left and right motor separately.
 // Name L/R_FORWARD/BACKWARD
 
-// Bluetooth Serial instant 
-BLESerial BLESerial(BLE_REQ, BLE_RDY, BLE_RST);
+// Bluetooth Serial instant
+BLESerial BLESerial(0, 1, 2);// Choosing pin 0, 1 and 2 for bluetooth status display that we don't really have 5555.
 
 void setup() {
   // put your setup code here, to run once:
