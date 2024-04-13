@@ -14,9 +14,9 @@ void initGPIO() {
 }
 
 void motor_setSpeedLR(int16_t Lspeed, int16_t Rspeed) {
-  if((Lspeed > 255) || (Lspeed < 255))
+  if((Lspeed > 255) || (Lspeed < -255))
     return;
-  if((Rspeed > 255) || (Rspeed < 255))
+  if((Rspeed > 255) || (Rspeed < -255))
     return;
   // Left motor
   if (Lspeed > 0) { // Positive speed, going forward
