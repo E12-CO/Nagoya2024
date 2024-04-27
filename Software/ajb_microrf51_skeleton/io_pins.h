@@ -10,10 +10,10 @@
 // Motor control stuffs
 
 // Motor drives pin
-#define L_MOTOR_DIR 25
-#define L_MOTOR_PWM 26
-#define R_MOTOR_DIR 27
-#define R_MOTOR_PWM 28
+#define L_MOTOR_DIR 17
+#define L_MOTOR_PWM 18
+#define R_MOTOR_DIR 19
+#define R_MOTOR_PWM 20
 
 // Motor PWM channels
 #define L_MOTOR_PWM_CHAN  0
