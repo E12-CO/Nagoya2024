@@ -24,7 +24,6 @@ void pwm_init() {
   nrf_pwm_init(&pwm_config);
 }
 
-
 void setup() {
   // put your setup code here, to run once:
   char* uuid                   = "a196c876-de8c-4c47-ab5a-d7afd5ae7127";
@@ -35,11 +34,13 @@ void setup() {
   beacon.begin(uuid, major, minor, measuredPower);
 
   pwm_init();
-  nrf_pwm_set_value(0, 50);
-  nrf_pwm_set_value(1, 127);
 }
 
+uint8_t counter;
 void loop() {
   // put your main code here, to run repeatedly:
   beacon.loop();
+  nrf_pwm_set_value(0, counter);
+  nrf_pwm_set_value(1, 255-counter);
+  counter++;
 }

@@ -1,5 +1,8 @@
 #ifndef __NRF_PWM_NOGLITCH_H__
 #define __NRF_PWM_NOGLITCH_H__
+#ifdef __cplusplus
+extern "C"{
+#endif
 #include <stdint.h>
 #include <Arduino.h>
 
@@ -66,4 +69,8 @@ uint32_t nrf_pwm_init(nrf_pwm_config_t *config);
 uint32_t nrf_pwm_set_value(uint32_t pwm_channel, uint32_t pwm_value);
 
 uint32_t nrf_pwm_get_max_value(void);
+
+#ifdef __cplusplus // C extern ja
+}
+#endif
 #endif

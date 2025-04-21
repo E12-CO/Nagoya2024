@@ -1,4 +1,7 @@
 #include "nrf_pwm_noglitch.h"
+#ifdef __cplusplus
+extern "C"{
+#endif
 #include <nrf.h>
 #ifdef NRF51_S130
 #include <nrf_nvic.h>
@@ -114,7 +117,8 @@ static void pwm_freq_int_set(void)
   PWM_TIMER->INTENSET          = TIMER_INTENSET_COMPARE3_Msk;
 }
 
-void PWM_IRQHandler(void)
+
+void PWM_IRQHandler(void)// Extern "C" might fix this No-interrupt call issue.
 {
   PWM_TIMER->EVENTS_COMPARE[3] = 0;
 
@@ -343,3 +347,7 @@ uint32_t nrf_pwm_set_value(uint32_t pwm_channel, uint32_t pwm_value)
 
   return NRF_SUCCESS;
 }
+
+#ifdef __cplusplus
+}
+#endif
