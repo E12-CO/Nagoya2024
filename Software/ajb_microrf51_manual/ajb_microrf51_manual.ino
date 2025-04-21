@@ -13,7 +13,6 @@
 #include <nrf.h>
 #include <nrf51_bitfields.h>
 
-
 uint8_t receive_buffer[32];
 
 unsigned long poll_millis = 0;
@@ -48,8 +47,8 @@ void setup() {
   // put your setup code here, to run once:
   initGPIO();// Initialize GPIO and PWM
 
-  nrf51_esb_init(0xF0F0F0F0D2, 0xF0F0F0F0E1, 76);
-  nrf51_esb_setPTR(receive_buffer);
+  nrf51_esb_init(0xF0F0F0F0D2, 0xF0F0F0F0E1, 76);// Set writing pipe, reading pipe and frequency channel (2,476 Mhz).
+  nrf51_esb_setPTR(receive_buffer);// Set pointer to receive buffer.
   //Serial.setPins(16, 15);
   //Serial.begin(115200);
   //delay(100);
@@ -59,9 +58,9 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
   while (true) {
-    pwm_runner();
+    pwm_runner();// run Software PWM task
     if ((millis() - poll_millis) > 7) {
-      nrf51_esb_poll();
+      nrf51_esb_poll();// Poll data if receive available
       if (nrf51_esb_rx_available() == 1) {
         motor_setSpeedLR(
           map(receive_buffer[19], 0, 255, 100, -100),

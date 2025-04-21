@@ -10,6 +10,7 @@ bool rxne_flag, txe_flag;
 unsigned long rx_timeout_millis;
 
 // Taken from : https://github.com/NordicPlayground/nrf51-micro-esb/blob/master/common/micro_esb.c
+// convert each MSB-first byte to LSB-first 
 static uint32_t bytewise_bit_swap(uint32_t inp)
 {
   inp = (inp & 0xF0F0F0F0) >> 4 | (inp & 0x0F0F0F0F) << 4;
@@ -17,23 +18,25 @@ static uint32_t bytewise_bit_swap(uint32_t inp)
   return (inp & 0xAAAAAAAA) >> 1 | (inp & 0x55555555) << 1;
 }
 
+// Initialize Enhanced ShockBurst radio
 void nrf51_esb_init(uint64_t write_pipe, uint64_t read_pipe, uint8_t radio_chan) {
   // Enable HSE
-  NRF_CLOCK->EVENTS_HFCLKSTARTED  = 0;
-  NRF_CLOCK->TASKS_HFCLKSTART     = 1;
-  while (NRF_CLOCK->EVENTS_HFCLKSTARTED == 0);
+  NRF_CLOCK->EVENTS_HFCLKSTARTED  = 0;// Clear pending event of High freq clock
+  NRF_CLOCK->TASKS_HFCLKSTART     = 1;// Start External High freq clock (16Mhz)
+  while (NRF_CLOCK->EVENTS_HFCLKSTARTED == 0);// Wait until clock is stable
 
   // Update Radio parameter
   // 1. TX power
-  NRF_RADIO->TXPOWER = RADIO_TXPOWER_TXPOWER_Neg30dBm << RADIO_TXPOWER_TXPOWER_Pos;
+  NRF_RADIO->TXPOWER = RADIO_TXPOWER_TXPOWER_Neg30dBm << RADIO_TXPOWER_TXPOWER_Pos;// Set Transmit power to the lowest (for power usage reason).
 
   // 2. Frequency channel 2400 + FREQUENCY Mhz
-  NRF_RADIO->FREQUENCY  = (uint32_t)radio_chan;
+  NRF_RADIO->FREQUENCY  = (uint32_t)radio_chan;// Select radio channel
 
   // 3. Bit rate
-  NRF_RADIO->MODE = RADIO_MODE_MODE_Nrf_1Mbit << RADIO_MODE_MODE_Pos;
+  NRF_RADIO->MODE = RADIO_MODE_MODE_Nrf_1Mbit << RADIO_MODE_MODE_Pos;// Set radio bit rate to 1Mbit
 
   // 4. 16 bit crc
+  // Set up the CRC polynomial to ? (TODO : set corrent CRC as the RF24 Library)
   NRF_RADIO->CRCCNF = RADIO_CRCCNF_LEN_Two << RADIO_CRCCNF_LEN_Pos;
   NRF_RADIO->CRCINIT = (uint32_t)0xFFFF;
   NRF_RADIO->CRCPOLY = (uint32_t)0x11021;
@@ -45,29 +48,31 @@ void nrf51_esb_init(uint64_t write_pipe, uint64_t read_pipe, uint8_t radio_chan)
     (1 << RADIO_PCNF0_S1LEN_Pos);
 
   NRF_RADIO->PCNF1 =
-    (RADIO_PCNF1_WHITEEN_Disabled << RADIO_PCNF1_WHITEEN_Pos) |
-    (RADIO_PCNF1_ENDIAN_Big << RADIO_PCNF1_ENDIAN_Pos) |
-    (BASE_ADDR_LEN << RADIO_PCNF1_BALEN_Pos) |
-    (PACKET_LEN << RADIO_PCNF1_STATLEN_Pos) |
-    (PACKET_LEN << RADIO_PCNF1_MAXLEN_Pos);
+    (RADIO_PCNF1_WHITEEN_Disabled << RADIO_PCNF1_WHITEEN_Pos) | // Disable BLE's data whitening feature.
+    (RADIO_PCNF1_ENDIAN_Big << RADIO_PCNF1_ENDIAN_Pos) |        // Use big endian (LSB first)
+    (BASE_ADDR_LEN << RADIO_PCNF1_BALEN_Pos) |                  // Set base address length to 4 bytes
+    (PACKET_LEN << RADIO_PCNF1_STATLEN_Pos) |                   // Set current packet data length to 32 bytes
+    (PACKET_LEN << RADIO_PCNF1_MAXLEN_Pos);                     // Set the maximum packet data length to 32 bytes
 
   // 6. Radio address
   // 1 byte PREFIX address + 4 bytes BASE address = 5 bytes address compatible with nRF24
   // TX address (PREFIX0.AP0 and logical adddr 0 of BASE0):
-  NRF_RADIO->PREFIX0  = (uint8_t)bytewise_bit_swap(write_pipe & 0xFF);
-  NRF_RADIO->BASE0    = bytewise_bit_swap((uint32_t)(write_pipe >> 8));
-  NRF_RADIO->TXADDRESS = 0;// Use BASE0 as TX address
+  NRF_RADIO->PREFIX0  = (uint8_t)bytewise_bit_swap(write_pipe & 0xFF);  // Set prefix address of write pipe
+  NRF_RADIO->BASE0    = bytewise_bit_swap((uint32_t)(write_pipe >> 8)); // Set base address of write pipe
+  NRF_RADIO->TXADDRESS = 0;// Use BASE0 as TX address                   // Choose BASE0 as base address
   // RX address (PREFIX1.AP4 and logical addr 4 of BASE1):
-  NRF_RADIO->PREFIX1  = (uint8_t)bytewise_bit_swap(read_pipe & 0xFF);
-  NRF_RADIO->BASE1    = bytewise_bit_swap((uint32_t)(read_pipe >> 8));
-  NRF_RADIO->RXADDRESSES  = 1 << 4;// use BASE1 as RX address
+  NRF_RADIO->PREFIX1  = (uint8_t)bytewise_bit_swap(read_pipe & 0xFF);   // Set prefix address of read pipe
+  NRF_RADIO->BASE1    = bytewise_bit_swap((uint32_t)(read_pipe >> 8));  // Set base address of read pipe 
+  NRF_RADIO->RXADDRESSES  = 1 << 4;// use BASE1 as RX address           // Choose PREFIX1 as prefix address and BASE1 as base address.
 
 }
 
+// setup packet pointer
 void nrf51_esb_setPTR(uint8_t *packetptr) {
   packet_ptr = (uint32_t *)packetptr;
 }
 
+// Radio RX polling
 void nrf51_esb_poll() {
 
   if ((millis() - rx_timeout_millis) > RX_TIMEOUT) {
@@ -111,6 +116,7 @@ void nrf51_esb_poll() {
 
     case 3:// Check CRC match
       {
+        // TODO: make CRC works
         if (NRF_RADIO->CRCSTATUS == 1) {
           //matched
           poll_fsm = 4;
@@ -124,7 +130,7 @@ void nrf51_esb_poll() {
 
     case 4:// Disable Radio
       {
-        NRF_RADIO->EVENTS_DISABLED = 0;
+        NRF_RADIO->EVENTS_DISABLED  = 0;
         NRF_RADIO->TASKS_DISABLE    = 1;
         poll_fsm = 5;
         //Serial.println("Disabling Radio");
